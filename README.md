@@ -23,8 +23,10 @@ The idea was presented on the 4th Workshop on Design Automation for Understandin
 
 * [ANTLR4](http://www.antlr.org/) (4.5.3) is used to generate the parser backend
 * A reduced version of the original [Verilog2001](https://github.com/antlr/grammars-v4/tree/master/verilog) grammar (*.g4) was used to create the parser
-* Primitive gate-netlists can be processed (relying on logic primitves such as and, or, nand, nor, etc.)
+* Primitive gate-netlists can be processed (relying on logic primitives such as and, or, nand, nor, etc.)
 * The software is tested against ISCAS '85 and '89 circuits [Source](http://www.pld.ttu.ee/~maksim/benchmarks/)
+* IMPORTANT: Verilog files may only contain a single module. The parser can be extended easily to support arbitrary module names. However, they will be represented node
+* Currently, only single output gates are implemented (fanouts are an exception)
 
 ## License
 
