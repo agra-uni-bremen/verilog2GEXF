@@ -25,8 +25,10 @@ public class Verilog2Gexf {
 
     public static void main(String[] args) throws Exception {
         int ID = 0;
-        String filename;
+        Config config = new Config();
         Options options = new Options();
+        File file;
+        ANTLRInputStream input = null;
 
         /* Command Line Parser */
         Option fileNameOption = new Option("i", "input", true, "path to input file");
@@ -59,10 +61,9 @@ public class Verilog2Gexf {
             return;
         }
 
-        filename = cmd.getOptionValue("input");
-        File file;
+        config.filepath = cmd.getOptionValue("input");
         InputStream IS = null;
-        file = new File(filename);
+        file = new File(config.filepath);
 
         if (!file.isFile() || !file.canRead()) {
             System.out.println("ERROR: File not present or inaccessible");
@@ -71,12 +72,10 @@ public class Verilog2Gexf {
             try {
                 IS = new FileInputStream(file);
             } catch (FileNotFoundException e) {
-                System.out.println("ERROR: Can not open " + filename);
+                System.out.println("ERROR: Can not open " + config.filepath);
                 System.exit(-1);
             }
         }
-
-        ANTLRInputStream input = null;
 
         try {
             input = new ANTLRInputStream(IS);
@@ -84,6 +83,10 @@ public class Verilog2Gexf {
             System.out.println("ERROR: Can not read netlist");
             System.exit(-1);
         }
+
+        config.createFans = !cmd.hasOption("noFANs");
+        config.levelize = !cmd.hasOption("noLvl");
+        config.noOutput = !cmd.hasOption("noOut");
 
         // ANTLR default usage
         Verilog2001_netlistLexer lexer = new Verilog2001_netlistLexer(input);
@@ -103,18 +106,18 @@ public class Verilog2Gexf {
 
         // Connect circuit, create fanouts and levelize circuit
         listener.preprocessor.connectCircuitGraph();
-        if (!cmd.hasOption("noFANs")) {
+        if (config.createFans) {
             listener.preprocessor.createFanouts(ID);
         }
 
-        if (!cmd.hasOption("noLvl")) {
+        if (config.levelize) {
             listener.preprocessor.levelize();
         }
 
-        if (!cmd.hasOption("noOut")) {
+        if (config.noOutput) {
             // Create GEXF XML file
-            GEXFWriter writer = new GEXFWriter(listener.preprocessor.gates, listener.preprocessor.moduleName, ID);
-            writer.filename = filename;
+            GEXFWriter writer = new GEXFWriter(listener.preprocessor.gates, listener.preprocessor.moduleName, ID, config);
+            writer.filename = config.filepath;
             writer.printGexf();
         }
     }
