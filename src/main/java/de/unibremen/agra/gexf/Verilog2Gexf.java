@@ -2,6 +2,8 @@ package de.unibremen.agra.gexf;
 
 import de.unibremen.agra.gexf.generated.*;
 
+import org.apache.commons.cli.*;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -17,41 +19,60 @@ import java.util.Vector;
 public class Verilog2Gexf {
 
     List<Gate> gates;
-
     Verilog2Gexf() {
         gates = new Vector<>();
     }
 
     public static void main(String[] args) throws Exception {
         int ID = 0;
+        String filename;
+        Options options = new Options();
 
-        String filename = "";
-        File file;
-        InputStream IS = null;
+        /* Command Line Parser */
+        Option fileNameOption = new Option("i", "input", true, "path to input file");
+        fileNameOption.setRequired(true);
+        options.addOption(fileNameOption);
 
-        boolean fileNameNext = false;
+        Option disableFANinsertion = new Option("noFANs", false, "disable insertion of Fanout primitives");
+        disableFANinsertion.setRequired(false);
+        options.addOption(disableFANinsertion);
 
-        if (args.length != 1) {
-            System.out.println("ERROR: Input file must be specified.\n \t $ java -jar verilog2gexf.jar /path/to/file.v \n \t generated *.gexf file will be written to source directory");
-            System.exit(0);
+        Option disableLevelizing = new Option("noLvl", false, "disable computation of level information");
+        disableLevelizing.setRequired(false);
+        options.addOption(disableLevelizing);
+
+        Option disableGEXFoutput = new Option("noOut", false, "disable writing of *.gexf file");
+        disableLevelizing.setRequired(false);
+        options.addOption(disableGEXFoutput);
+
+        CommandLineParser cmdParser = new DefaultParser();
+        HelpFormatter helpFormatter = new HelpFormatter();
+        CommandLine cmd;
+        /* Command Line Parser END */
+
+        try {
+            cmd = cmdParser.parse(options, args);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            helpFormatter.printHelp("$ java -jar verilog2gexf.jar", options);
+            System.exit(1);
+            return;
         }
 
-        assert args.length == 1;
-        
-        for (String arg : args) {
-            filename = arg;
-            file = new File(filename);
+        filename = cmd.getOptionValue("input");
+        File file;
+        InputStream IS = null;
+        file = new File(filename);
 
-            if (!file.isFile() || !file.canRead()) {
-                System.out.println("ERROR: File not present or inaccessible");
+        if (!file.isFile() || !file.canRead()) {
+            System.out.println("ERROR: File not present or inaccessible");
+            System.exit(-1);
+        } else {
+            try {
+                IS = new FileInputStream(file);
+            } catch (FileNotFoundException e) {
+                System.out.println("ERROR: Can not open " + filename);
                 System.exit(-1);
-            } else {
-                try {
-                    IS = new FileInputStream(file);
-                } catch (FileNotFoundException e) {
-                    System.out.println("ERROR: Can not open " + filename);
-                    System.exit(-1);
-                }
             }
         }
 
@@ -64,7 +85,7 @@ public class Verilog2Gexf {
             System.exit(-1);
         }
 
-	// ANTLR default usage
+        // ANTLR default usage
         Verilog2001_netlistLexer lexer = new Verilog2001_netlistLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         Verilog2001_netlistParser parser = new Verilog2001_netlistParser(tokens);
@@ -72,22 +93,29 @@ public class Verilog2Gexf {
         ParseTreeWalker walker = new ParseTreeWalker();
         VerilogListener listener = new VerilogListener();
 
-	// Pass initial ID to preprocessor
+        // Pass initial ID to preprocessor
         listener.ID = ID;
         listener.preprocessor = new Preprocessor();
-	// Walk parse tree to trigger callbacks from VerilogListener
+        // Walk parse tree to trigger callbacks from VerilogListener
         walker.walk(listener, tree);
-	// Rescue final ID from parser
+        // Rescue final ID from parser
         ID = listener.ID;
 
-	// Connect circuit, create fanouts and levelize circuit
+        // Connect circuit, create fanouts and levelize circuit
         listener.preprocessor.connectCircuitGraph();
-        listener.preprocessor.createFanouts(ID);
-        listener.preprocessor.levelize();
+        if (!cmd.hasOption("noFANs")) {
+            listener.preprocessor.createFanouts(ID);
+        }
 
-	// Create GEXF XML file
-        GEXFWriter writer = new GEXFWriter(listener.preprocessor.gates, listener.preprocessor.moduleName, ID);
-        writer.filename = filename;
-        writer.printGexf();
+        if (!cmd.hasOption("noLvl")) {
+            listener.preprocessor.levelize();
+        }
+
+        if (!cmd.hasOption("noOut")) {
+            // Create GEXF XML file
+            GEXFWriter writer = new GEXFWriter(listener.preprocessor.gates, listener.preprocessor.moduleName, ID);
+            writer.filename = filename;
+            writer.printGexf();
+        }
     }
 }

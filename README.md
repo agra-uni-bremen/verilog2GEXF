@@ -16,14 +16,16 @@ The idea was presented on the 4th Workshop on Design Automation for Understandin
 * The project uses Gradle as build-system
 * Run `$ gradle build` to generate the executable (gradle is required)
 * You may move the generated Verilog2Gexf.jar to any other location
-* A Verilog netlist must be specified (e.g. `java -jar Verilog2Gexf.jar /path/to/file.v`)
+* A Verilog netlist must be specified (e.g. `java -jar Verilog2Gexf.jar -i /path/to/file.v`)
+* Consider the command line options for further details (e.g. switches for disabling Fanout creation)
 * The resulting *.gexf-file will be dumped to the same directory as the initial netlist
 
 ## Technology & Limitations
 
 * [ANTLR4](http://www.antlr.org/) (4.5.3) is used to generate the parser backend
 * A reduced version of the original [Verilog2001](https://github.com/antlr/grammars-v4/tree/master/verilog) grammar (*.g4) was used to create the parser
-* Primitive gate-netlists can be processed (relying on logic primitives such as and, or, nand, nor, etc.)
+* Primitive gate-netlists can be processed (relying on logic primitives such as and, or, nand, nor, etc.) 
+* *Attention* Only a single module is supported at the current state
 * The software is tested against ISCAS '85 and '89 circuits [Source](http://www.pld.ttu.ee/~maksim/benchmarks/)
 * IMPORTANT: Verilog files may only contain a single module. The parser can be extended easily to support arbitrary module names. However, they will be represented node
 * Currently, only single output gates are implemented (fanouts are an exception)

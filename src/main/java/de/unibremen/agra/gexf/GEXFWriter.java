@@ -1,6 +1,8 @@
 package de.unibremen.agra.gexf;
 
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -11,11 +13,13 @@ public class GEXFWriter {
     List<Gate> gates;
     int edgeID;
     String filename;
+    String timeStamp;
 
     public GEXFWriter(List<Gate> gates, String circuitName, int maxGateID) {
         this.circuitName = circuitName;
         this.gates = gates;
         this.edgeID = maxGateID;
+        timeStamp = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
     }
 
     public void printGexf() {
@@ -23,7 +27,7 @@ public class GEXFWriter {
             PrintWriter writer = new PrintWriter(filename + ".gexf", "UTF-8");
             writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             writer.println("<gexf xmlns=\"http://www.gexf.net/1.2draft\" version=\"1.2\">");
-            writer.println("    <meta lastmodifieddate=\"2009-03-20\">");
+            writer.println("    <meta lastmodifieddate=\""+timeStamp+"\">");
             writer.println("        <creator>Verilog2GEXF</creator>");
             writer.println("        <description> " + circuitName + " </description>");
             writer.println("    </meta>");
